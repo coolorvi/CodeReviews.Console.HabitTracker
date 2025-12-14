@@ -4,9 +4,15 @@ namespace HabitTracker
 {
     internal class Program
     {
+        public bool IsCorrectDate(string date)
+        {
+            return DateTime.TryParseExact(date, "dd.mm.yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime parseDate);
+        }
+
         static void Main()
         {
             var db = new Database();
+            var p = new Program();
             bool isRunning = true;
             bool isReturnMainMenu = false;
             string nameCurrentTable = "";
@@ -134,8 +140,7 @@ namespace HabitTracker
                                     Console.WriteLine("-------------------------------");
                                     continue;
                                 }
-                                Regex validateDateRegex = new Regex("^[0-9]{1,2}\\.[0-9]{1,2}\\.[0-9]{4}$");
-                                if (!validateDateRegex.IsMatch(dateHabit))
+                                if (!p.IsCorrectDate(dateHabit))
                                 {
                                     Console.WriteLine("Oops! Incorrect date");
                                     Console.WriteLine("-------------------------------");
@@ -149,13 +154,12 @@ namespace HabitTracker
                         }
                         Console.WriteLine("Enter the count:");
                         string? stringCountHabit = Console.ReadLine();
-                        if (stringCountHabit == null)
+                        if (stringCountHabit == null || Int32.TryParse(stringCountHabit, out int countHabit))
                         {
                             Console.WriteLine("Oops! Incorrect count");
                             Console.WriteLine("-------------------------------");
                             continue;
                         }
-                        var countHabit = int.Parse(stringCountHabit);
                         if (dateHabit == "" || dateHabit == null)
                         {
                             Console.WriteLine("Oops! Incorrect date");

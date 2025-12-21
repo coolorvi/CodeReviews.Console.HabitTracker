@@ -70,21 +70,21 @@ namespace HabitTracker
                 var selectHabitTable = connection.CreateCommand();
                 selectHabitTable.CommandText = $"SELECT * FROM {nameTable}";
                 var reader = selectHabitTable.ExecuteReader();
+                var isTableEmpty = true;
                 using (reader)
                 {
-                    if (reader.Read())
+                    while (reader.Read())
                     {
-                        while (reader.Read())
-                        {
-                            Console.WriteLine($"ID: {reader.GetInt32(0)}, " + $"Date: {reader.GetString(1)}, " + $"Count: {reader.GetInt32(2)}");
-                        }
-                    } else
-                    {
-                        Console.WriteLine("Oops! You don't have any records yet.");
-                        Console.WriteLine("-------------------------------");
+                        isTableEmpty = false;
+                        Console.WriteLine($"ID: {reader.GetInt32(0)}, " + $"Date: {reader.GetString(1)}, " + $"Count: {reader.GetInt32(2)}");
                     }
                 }
-            }
+                if (isTableEmpty == true)
+                {
+                    Console.WriteLine("Oops! You don't have any records yet.");
+                    Console.WriteLine("-------------------------------");
+                }
+        }
         }
 
         public void InsertRecord(string nameTable, string dateHabit, int countHabit)

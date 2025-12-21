@@ -6,7 +6,7 @@ namespace HabitTracker
     {
         public bool IsCorrectDate(string date)
         {
-            return DateTime.TryParseExact(date, "dd.mm.yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime parseDate);
+            return DateTime.TryParseExact(date, "dd.MM.yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime _);
         }
 
         static void Main()
@@ -146,6 +146,7 @@ namespace HabitTracker
                                     Console.WriteLine("-------------------------------");
                                     continue;
                                 }
+                                Console.WriteLine("The new record has been added");
                                 break;
                             default:
                                 Console.WriteLine("Incorrect input. Please, enter 'yes' or 'no'.");
@@ -154,7 +155,7 @@ namespace HabitTracker
                         }
                         Console.WriteLine("Enter the count:");
                         string? stringCountHabit = Console.ReadLine();
-                        if (stringCountHabit == null || Int32.TryParse(stringCountHabit, out int countHabit))
+                        if (stringCountHabit == null || !Int32.TryParse(stringCountHabit, out int countHabit))
                         {
                             Console.WriteLine("Oops! Incorrect count");
                             Console.WriteLine("-------------------------------");

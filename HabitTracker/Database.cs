@@ -6,114 +6,144 @@ namespace HabitTracker
     {
         private readonly string connectionString = "Data Source=habits.sqlite";
 
-        public List<string> TakeAllNameTable()
+        public void CreateTables()
         {
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
-            var nameAllTable = connection.CreateCommand();
-            nameAllTable.CommandText =
-            @"
-                SELECT name
-                FROM sqlite_master
-                WHERE type = 'table'  
-            ";
-            var namesTables = new List<string>();
-            using var reader = nameAllTable.ExecuteReader();
-            while (reader.Read())
-            {
-                if (reader.GetString(0) != "sqlite_sequence")
-                {
-                    namesTables.Add(reader.GetString(0));
-                }
-            }
-            return namesTables;
-        }
 
-        public List<List<string>> TakeAllRecords(string nameTable)
-        {
-            SqliteConnection connection = new(connectionString);
-            connection.Open();
-            var allRecords = connection.CreateCommand();
-            allRecords.CommandText = $"SELECT ID, Date, Count FROM {nameTable}";
-            var recordsHabit = new List<List<string>>();
-            using var reader = allRecords.ExecuteReader();
-            while (reader.Read())
-            {
-                List<string> recordHabit = new() {reader.GetInt32(0).ToString(), reader.GetString(1), reader.GetInt32(2).ToString()};
-                recordsHabit.Add(recordHabit);
-            }
-            return recordsHabit;
-        }
-
-        public void CreateTable(string nameTable)
-        {
-            SqliteConnection connection = new(connectionString);
-            connection.Open();
-            var habitTable = connection.CreateCommand();
-            habitTable.CommandText =
-            @$"
-                 CREATE TABLE IF NOT EXISTS {nameTable} (
-                    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            var tables = connection.CreateCommand();
+            tables.CommandText = @"
+                CREATE TABLE IF NOT EXISTS Habits (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    Name TEXT NOT NULL UNIQUE
+                );
+                CREATE TABLE IF NOT EXISTS Records (
+                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    HabitId INTEGER NOT NULL,
                     Date TEXT NOT NULL,
-                    Count INT NOT NULL
-                 )
+                    Count INTEGER NOT NULL,
+                    FOREIGN KEY (HabitId) REFERENCES Habits(Id)
+                );
             ";
-            habitTable.ExecuteNonQuery();
+            tables.ExecuteNonQuery();
         }
 
-        public void ReadTable(string nameTable)
+        public List<(int Id, string Name)> GetAllHabits()
         {
-            SqliteConnection connection = new(connectionString);
-            using (connection)
+            var habits = new List<(int, string)>();
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            var table = connection.CreateCommand();
+            table.CommandText = "SELECT Id, Name FROM Habits";
+            using var reader = table.ExecuteReader();
+
+            while (reader.Read())
+                habits.Add((reader.GetInt32(0), reader.GetString(1)));
+
+            return habits;
+        }
+
+        public int CreateHabit(string name)
+        {
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            var table = connection.CreateCommand();
+            table.CommandText = "INSERT INTO Habits (Name) VALUES (@name); SELECT last_insert_rowid();";
+            table.Parameters.AddWithValue("@name", name);
+
+            return Convert.ToInt32(table.ExecuteScalar());
+        }
+
+        public void ReadAllRecords(int habitId)
+        {
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            var table = connection.CreateCommand();
+            table.CommandText = "SELECT Id, Date, Count FROM Records WHERE HabitId=@habitId";
+            table.Parameters.AddWithValue("@habitId", habitId);
+
+            using var reader = table.ExecuteReader();
+
+            bool empty = true;
+            while (reader.Read())
             {
-                connection.Open();
-                var selectHabitTable = connection.CreateCommand();
-                selectHabitTable.CommandText = $"SELECT * FROM {nameTable}";
-                var reader = selectHabitTable.ExecuteReader();
-                var isTableEmpty = true;
-                using (reader)
-                {
-                    while (reader.Read())
-                    {
-                        isTableEmpty = false;
-                        Console.WriteLine($"ID: {reader.GetInt32(0)}, " + $"Date: {reader.GetString(1)}, " + $"Count: {reader.GetInt32(2)}");
-                    }
-                }
-                if (isTableEmpty == true)
-                {
-                    Console.WriteLine("Oops! You don't have any records yet.");
-                    Console.WriteLine("-------------------------------");
-                }
-        }
+                empty = false;
+                Console.WriteLine($"ID: {reader.GetInt32(0)}, Date: {reader.GetString(1)}, Count: {reader.GetInt32(2)}");
+            }
+
+            if (empty)
+                Console.WriteLine("No records found.");
         }
 
-        public void InsertRecord(string nameTable, string dateHabit, int countHabit)
+        public void InsertRecord(int habitId, string date, int count)
         {
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
-            var insertHabitTable = connection.CreateCommand();
-            insertHabitTable.CommandText = $"INSERT INTO {nameTable} (Date, Count) VALUES (@date, @count);";
-            insertHabitTable.Parameters.AddWithValue("@date", dateHabit);
-            insertHabitTable.Parameters.AddWithValue("@count", countHabit);
-            insertHabitTable.ExecuteNonQuery();
+
+            var table = connection.CreateCommand();
+            table.CommandText = "INSERT INTO Records (HabitId, Date, Count) VALUES (@habitId, @date, @count)";
+            table.Parameters.AddWithValue("@habitId", habitId);
+            table.Parameters.AddWithValue("@date", date);
+            table.Parameters.AddWithValue("@count", count);
+
+            table.ExecuteNonQuery();
         }
 
-        public void DeleteRecord(string nameTable, int idTable)
+        public void DeleteRecord(int id)
         {
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
-            var deleteHabitRecord = connection.CreateCommand();
-            deleteHabitRecord.CommandText = $"DELETE FROM {nameTable} WHERE ID = {idTable}";
-            deleteHabitRecord.ExecuteNonQuery();
+
+            var table = connection.CreateCommand();
+            table.CommandText = "DELETE FROM Records WHERE Id=@id";
+            table.Parameters.AddWithValue("@id", id);
+
+            table.ExecuteNonQuery();
         }
 
-        public void UpdateRecord(string nameTable, int idTable, int newCount)
+        public void UpdateRecord(int id, int count)
         {
-            SqliteConnection connection = new(connectionString);
+            using var connection = new SqliteConnection(connectionString);
             connection.Open();
-            var updateHabitRecord = connection.CreateCommand();
-            updateHabitRecord.CommandText = $"UPDATE {nameTable} SET Count = {newCount} WHERE ID = {idTable}";
-            updateHabitRecord.ExecuteNonQuery();
+
+            var table = connection.CreateCommand();
+            table.CommandText = "UPDATE Records SET Count=@count WHERE Id=@id";
+            table.Parameters.AddWithValue("@count", count);
+            table.Parameters.AddWithValue("@id", id);
+
+            table.ExecuteNonQuery();
         }
+        public List<(int Id, string Date, int Count)> GetRecords(int habitId)
+        {
+            var records = new List<(int, string, int)>();
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            var table = connection.CreateCommand();
+            table.CommandText = "SELECT Id, Date, Count FROM Records WHERE HabitId=@habitId";
+            table.Parameters.AddWithValue("@habitId", habitId);
+
+            using var reader = table.ExecuteReader();
+            while (reader.Read())
+                records.Add((reader.GetInt32(0), reader.GetString(1), reader.GetInt32(2)));
+
+            return records;
+        }
+
+        public bool RecordExists(int recordId)
+        {
+            using var connection = new SqliteConnection(connectionString);
+            connection.Open();
+
+            var table = connection.CreateCommand();
+            table.CommandText = "SELECT COUNT(1) FROM Records WHERE Id=@id";
+            table.Parameters.AddWithValue("@id", recordId);
+
+            return Convert.ToInt32(table.ExecuteScalar()) > 0;
+        }
+
     }
 }

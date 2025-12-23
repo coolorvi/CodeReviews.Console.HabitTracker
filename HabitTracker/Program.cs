@@ -6,7 +6,7 @@ namespace HabitTracker
     {
         private Database db = new();
         private bool isRunning = true;
-        private bool isReturnMainMenu = false;
+        private bool isReturnMainMenu;
         private int? currentHabitId = null;
         private string currentHabitName = "";
 
